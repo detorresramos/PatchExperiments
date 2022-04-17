@@ -21,6 +21,7 @@ def generate_images(path, n_samples):
 def indexInRace(race, image_generator, patch_size):
     for image in image_generator.next():
         patches = extract_patches(image, patch_size)
+        patches = tf.reshape(patches, (None, patch_size * patch_size))
         race.score(patches)
         
     return race
@@ -32,12 +33,11 @@ def extract_patches(image, patch_size):
                            rates=[1, 1, 1, 1],
                            padding='VALID')
 
+def makeRace(repetitions, concatenations, buckets, patch_size, seed):
+    hash_module = SRPHash(dimension=patch_size ** 2, num_hashes=repetitions * concatenations, seed=seed)
+    race = Race(repetitions, concatenations, buckets, hash_module)
 
-repetitions = 100
-concatenations = 2
-buckets = 1_000_000
-hash_module = SRPHash(dimension=20)
-race = Race( )
+
 
 def getImageScores(image, race, patch_size, plot=False):
     scores = []
