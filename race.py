@@ -98,6 +98,47 @@ class Race(tf.Module):
         self._n.assign(self._n + tf.cast(tf.shape(x)[0], dtype=tf.int64))
         
         return score
+    
+    @tf.function(
+        input_signature=[tf.TensorSpec(shape=None, dtype=tf.float32)])
+    def get_score(self, x):
+        """Computes the RACE score of received samples.
+        Arguments: 
+            Tensor of samples to be scored, with shape (n_samples, sample_dim).
+        Returns:
+            Tensor of RACE scores for each sample, with shape (n_samples,).
+        """
+        indices = self._get_indices(x)
+        
+        # The score for each sample is the average count across every row
+        # divided by the number of elements that had been previously indexed.
+        score = tf.reduce_mean(tf.gather_nd(self._arrays, indices), axis=-1)
+        # Prevent division by 0.
+        one_over_n = tf.math.reciprocal_no_nan(tf.cast(self._n, dtype=tf.float64))
+        score *= one_over_n
+        
+        return score
+
+    @tf.function(
+        input_signature=[tf.TensorSpec(shape=None, dtype=tf.float32)])
+    def update_score(self, x):
+        """Updates the RACE data structure.
+        Arguments: 
+            Tensor of samples to be indexed, with shape (n_samples, sample_dim).
+        Returns:
+            None
+        """
+        indices = self._get_indices(x)
+        
+        # For each sample, increment the counters at the locations that they are hashed to.
+        # Shape is n_samples x repetitions.
+        update = tf.ones(shape=tf.shape(indices)[:-1], dtype=tf.float64)
+        self._arrays.assign(tf.tensor_scatter_nd_add(self._arrays, indices, update))
+        
+        # This assumes that dim-0 is the number of samples. 
+        # This is a safe assumption because our embedding model will always output a 2D array,
+        # even if the samples are not batched.
+        self._n.assign(self._n + tf.cast(tf.shape(x)[0], dtype=tf.int64))
 
     def samples_seen(self):
         """Returns the number of samples seen so far.
