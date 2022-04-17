@@ -42,7 +42,7 @@ race = Race( )
 def getImageScores(image, race, patch_size, plot=False):
     scores = []
     for patch in extract_patches(image, patch_size):
-        scores.append(race.getScore(patch))
+        scores.append(race.get_score(patch))
 
     if plot:
         sorted_scores = sorted(scores)
@@ -51,18 +51,28 @@ def getImageScores(image, race, patch_size, plot=False):
     return scores
 
 def transformImage(image, patch_size, race_scores, threshold, show_transformed_image=False):
-    transformed_image = image
-    for i, patch in enumerate(extract_patches(image, patch_size)):
+    patches = extract_patches(image, patch_size)
+    for i in range(len(patches)):
         race_score = race_scores[i]
         if race_score > threshold:
-            zero out that part of the image
-    
+            patches[i] = [0 for _ in range(len(patches[0]))]
+
+    transformed_image = extract_patches_inverse(image, patches)
+
     if show_transformed_image:
         plt.axis("off")
         plt.imshow(transformed_image)
         plt.show()
 
     return transformed_image
+
+def extract_patches_inverse(image, patches):
+    _x = tf.zeros_like(image)
+    _y = extract_patches(_x)
+    grad = tf.gradients(_y, _x)[0]
+    # Divide by grad, to "average" together the overlapping patches
+    # otherwise they would simply sum up
+    return tf.gradients(_y, _x, grad_ys=patches)[0] / grad
 
 
 
