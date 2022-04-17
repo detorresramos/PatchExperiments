@@ -38,7 +38,6 @@ def makeRace(repetitions, concatenations, buckets, patch_size, seed):
     race = Race(repetitions, concatenations, buckets, hash_module)
 
 
-
 def getImageScores(image, race, patch_size, plot=False):
     scores = []
     for patch in extract_patches(image, patch_size):
@@ -46,7 +45,7 @@ def getImageScores(image, race, patch_size, plot=False):
 
     if plot:
         sorted_scores = sorted(scores)
-        plt.plot(list(range(len(sorted_scores))), sorted_scores, 'o', color='black');
+        plt.plot(list(range(len(sorted_scores))), sorted_scores, 'o', color='black')
 
     return scores
 
@@ -73,8 +72,3 @@ def extract_patches_inverse(image, patches):
     # Divide by grad, to "average" together the overlapping patches
     # otherwise they would simply sum up
     return tf.gradients(_y, _x, grad_ys=patches)[0] / grad
-
-
-
-# def main():
-#     pass
