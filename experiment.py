@@ -24,16 +24,16 @@ def indexInRace(race, image_generator, patch_size):
                            strides=[1, patch_size, patch_size, 1],
                            rates=[1, 1, 1, 1],
                            padding='VALID')
+        patches = tf.reshape(patches, (None, patch_size * patch_size))
         race.score(patches)
         
     return race
 
+def makeRace(repetitions, concatenations, buckets, patch_size, seed):
+    hash_module = SRPHash(dimension=patch_size ** 2, num_hashes=repetitions * concatenations, seed=seed)
+    race = Race(repetitions, concatenations, buckets, hash_module)
 
-repetitions = 100
-concatenations = 2
-buckets = 1_000_000
-hash_module = SRPHash(dimension=20)
-race = Race( )
+
 
 # def getImageScores(image, index, patch_size):
 #     scores = []
