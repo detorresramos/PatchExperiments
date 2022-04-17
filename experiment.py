@@ -32,7 +32,7 @@ def indexInRace(race, image_generator, patch_size):
 repetitions = 100
 concatenations = 2
 buckets = 1_000_000
-hash_module = SRPHash()
+hash_module = SRPHash(dimension=20)
 race = Race( )
 
 # def getImageScores(image, index, patch_size):
