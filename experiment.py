@@ -2,6 +2,7 @@ from operator import index
 from unittest.mock import patch
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from race import Race
+from lsh_functions import SRPHash
 import tensorflow as tf
 
 
@@ -31,7 +32,7 @@ def indexInRace(race, image_generator, patch_size):
 repetitions = 100
 concatenations = 2
 buckets = 1_000_000
-hash_module = f
+hash_module = SRPHash()
 race = Race( )
 
 # def getImageScores(image, index, patch_size):
