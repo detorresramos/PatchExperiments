@@ -4,6 +4,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from race import Race
 from lsh_functions import SRPHash
 import tensorflow as tf
+import matplotlib.pyplot as plt
 
 
 def generate_images(path, n_samples):
@@ -19,15 +20,18 @@ def generate_images(path, n_samples):
 
 def indexInRace(race, image_generator, patch_size):
     for image in image_generator.next():
-        patches = tf.image.extract_patches(images=[image],
-                           sizes=[1, patch_size, patch_size, 3],
-                           strides=[1, patch_size, patch_size, 1],
-                           rates=[1, 1, 1, 1],
-                           padding='VALID')
+        patches = extract_patches(image, patch_size)
         patches = tf.reshape(patches, (None, patch_size * patch_size))
         race.score(patches)
         
     return race
+
+def extract_patches(image, patch_size):
+    return tf.image.extract_patches(images=[image],
+                           sizes=[1, patch_size, patch_size, 3],
+                           strides=[1, patch_size, patch_size, 1],
+                           rates=[1, 1, 1, 1],
+                           padding='VALID')
 
 def makeRace(repetitions, concatenations, buckets, patch_size, seed):
     hash_module = SRPHash(dimension=patch_size ** 2, num_hashes=repetitions * concatenations, seed=seed)
@@ -35,23 +39,30 @@ def makeRace(repetitions, concatenations, buckets, patch_size, seed):
 
 
 
-# def getImageScores(image, index, patch_size):
-#     scores = []
-#     for each patch of size patch_size in image:
-#         query index with that patch and get score
-#         scores.append(score)
-#     do some sorting, graphing, etc
-#     return scores (not sorted)
+def getImageScores(image, race, patch_size, plot=False):
+    scores = []
+    for patch in extract_patches(image, patch_size):
+        scores.append(race.getScore(patch))
 
-# def transformImage(race_scores, threshold, patch_size):
-#     for each patch of size patch_size:
-#         get race_score of that patch
-#         if race_score higher than threshold:
-#             that patch is not in image
-#         else:
-#             it is
-#     show the image with the patches removed
-#     return transformed image
+    if plot:
+        sorted_scores = sorted(scores)
+        plt.plot(list(range(len(sorted_scores))), sorted_scores, 'o', color='black');
+
+    return scores
+
+def transformImage(image, patch_size, race_scores, threshold, show_transformed_image=False):
+    transformed_image = image
+    for i, patch in enumerate(extract_patches(image, patch_size)):
+        race_score = race_scores[i]
+        if race_score > threshold:
+            zero out that part of the image
+    
+    if show_transformed_image:
+        plt.axis("off")
+        plt.imshow(transformed_image)
+        plt.show()
+
+    return transformed_image
 
 
 
