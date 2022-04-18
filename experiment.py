@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 
 def generate_images(path, n_samples):
-    datagen = ImageDataGenerator()
+    datagen = ImageDataGenerator(rescale=1./255)
     
     generator = datagen.flow_from_directory(
         path,
@@ -28,7 +28,7 @@ def indexInRace(race, image_generator, patch_size):
 
 def extract_patches(image, patch_size):
     return tf.image.extract_patches(images=[image],
-                           sizes=[1, patch_size, patch_size, 3],
+                           sizes=[1, patch_size, patch_size, 1],
                            strides=[1, patch_size, patch_size, 1],
                            rates=[1, 1, 1, 1],
                            padding='VALID')
@@ -56,7 +56,7 @@ def transformImage(image, patch_size, race_scores, threshold, show_transformed_i
         if race_score > threshold:
             patches[i] = [0 for _ in range(len(patches[0]))]
 
-    transformed_image = extract_patches_inverse(image, patches)
+    transformed_image = extract_patches_inverse(image, patches, patch_size)
 
     if show_transformed_image:
         plt.axis("off")
@@ -65,9 +65,9 @@ def transformImage(image, patch_size, race_scores, threshold, show_transformed_i
 
     return transformed_image
 
-def extract_patches_inverse(image, patches):
+def extract_patches_inverse(image, patches, patch_size):
     _x = tf.zeros_like(image)
-    _y = extract_patches(_x)
+    _y = extract_patches(_x, patch_size)
     grad = tf.gradients(_y, _x)[0]
     # Divide by grad, to "average" together the overlapping patches
     # otherwise they would simply sum up
