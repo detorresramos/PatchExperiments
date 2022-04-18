@@ -53,7 +53,7 @@ def getImageScores(image, race, patch_size, plot=False):
     # NOTE: center
     patches -= 127.5
     # NOTE
-    scores = race.score(patches)
+    scores = race.get_score(patches)
     # scores = []
     # for patch in extract_patches(image, patch_size):
     #     scores.append(race.get_score(patch))
