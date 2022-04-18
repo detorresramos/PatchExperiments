@@ -19,23 +19,24 @@ def generate_images(path, n_samples):
 
 
 def indexInRace(race, image_generator, patch_size):
-    for image in image_generator.next():
+    images = image_generator.next()[0]
+    for image in images:
         patches = extract_patches(image, patch_size)
-        patches = tf.reshape(patches, (None, patch_size * patch_size))
+        patches = tf.reshape(patches, (-1, patch_size * patch_size * 3))
         race.score(patches)
         
     return race
 
 def extract_patches(image, patch_size):
-    return tf.image.extract_patches(images=[image],
-                           sizes=[1, patch_size, patch_size, 3],
+    return tf.image.extract_patches(images=tf.expand_dims(image, 0),
+                           sizes=[1, patch_size, patch_size, 1],
                            strides=[1, patch_size, patch_size, 1],
                            rates=[1, 1, 1, 1],
                            padding='VALID')
 
-def makeRace(repetitions, concatenations, buckets, patch_size, seed):
-    hash_module = SRPHash(dimension=patch_size ** 2, num_hashes=repetitions * concatenations, seed=seed)
-    race = Race(repetitions, concatenations, buckets, hash_module)
+def makeRace(repetitions, concatenations, num_bits, buckets, patch_size, seed):
+    hash_module = SRPHash(dimension=patch_size * patch_size * 3, num_hashes=repetitions * concatenations, num_bits=num_bits, seed=seed)
+    return Race(repetitions, concatenations, buckets, hash_module)
 
 
 
@@ -50,19 +51,19 @@ def getImageScores(image, race, patch_size, plot=False):
 
     return scores
 
-def transformImage(image, patch_size, race_scores, threshold, show_transformed_image=False):
-    transformed_image = image
-    for i, patch in enumerate(extract_patches(image, patch_size)):
-        race_score = race_scores[i]
-        if race_score > threshold:
-            zero out that part of the image
+# def transformImage(image, patch_size, race_scores, threshold, show_transformed_image=False):
+#     transformed_image = image
+#     for i, patch in enumerate(extract_patches(image, patch_size)):
+#         race_score = race_scores[i]
+#         if race_score > threshold:
+#             zero out that part of the image
     
-    if show_transformed_image:
-        plt.axis("off")
-        plt.imshow(transformed_image)
-        plt.show()
+#     if show_transformed_image:
+#         plt.axis("off")
+#         plt.imshow(transformed_image)
+#         plt.show()
 
-    return transformed_image
+#     return transformed_image
 
 
 
