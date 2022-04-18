@@ -1,4 +1,5 @@
 from operator import index
+import numpy as np
 from unittest.mock import patch
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from race import Race
@@ -7,16 +8,16 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 
-def generate_images(path, n_samples):
+def get_image_generator(path, batch_size):
     datagen = ImageDataGenerator(rescale=1./255)
     
     generator = datagen.flow_from_directory(
         path,
         target_size=(224, 224),
-        batch_size=n_samples,
+        batch_size=batch_size,
         class_mode='sparse')
     return generator
-    
+
 
 def indexInRace(race, image_generator, patch_size):
     images = image_generator.next()[0]
@@ -27,9 +28,7 @@ def indexInRace(race, image_generator, patch_size):
         patches = extract_patches(image, patch_size)
         # reshape to one dimensional array of patches
         patches = tf.reshape(patches, (-1, patch_size * patch_size * 3))
-        # NOTE: center
         patches -= 127.5
-        # NOTE
         race.score(patches)
         i += 1
     print(f"Progress: {i}/{total}", end='\r')
@@ -50,13 +49,8 @@ def getImageScores(image, race, patch_size, plot=False):
     patches = extract_patches(image, patch_size)
     # reshape to one dimensional array of patches
     patches = tf.reshape(patches, (-1, patch_size * patch_size * 3))
-    # NOTE: center
     patches -= 127.5
-    # NOTE
     scores = race.get_score(patches)
-    # scores = []
-    # for patch in extract_patches(image, patch_size):
-    #     scores.append(race.get_score(patch))
 
     if plot:
         sorted_scores = sorted(scores)
@@ -65,25 +59,29 @@ def getImageScores(image, race, patch_size, plot=False):
     return scores
 
 def transformImage(image, patch_size, race_scores, threshold, show_transformed_image=False):
-    patches = extract_patches(image, patch_size)
-    for i in range(len(patches)):
-        race_score = race_scores[i]
-        if race_score > threshold:
-            patches[i] = [0 for _ in range(len(patches[0]))]
+    with tf.GradientTape(persistent=True) as tape:
+        image_tensor = tf.convert_to_tensor(image, dtype=tf.float32)
+        tape.watch(image_tensor)
+        patches = extract_patches(image_tensor, patch_size)
+        patches = tf.Variable(tf.reshape(patches, (-1, patch_size * patch_size * 3)))
+        for i in range(patches.shape.dims[0]):
+            race_score = race_scores[i]
+            if race_score > threshold:
+                patches[i].assign(np.zeros(patches.shape.dims[1]))
 
-    transformed_image = extract_patches_inverse(image, patches, patch_size)
+        transformed_image = extract_patches_inverse(image_tensor, patches, patch_size, tape)
 
-    if show_transformed_image:
-        plt.axis("off")
-        plt.imshow(transformed_image)
-        plt.show()
+        if show_transformed_image:
+            plt.axis("off")
+            plt.imshow(transformed_image)
+            plt.show()
 
-#     return transformed_image
+        return transformed_image
 
-def extract_patches_inverse(image, patches, patch_size):
+def extract_patches_inverse(image, patches, patch_size, tape):
     _x = tf.zeros_like(image)
     _y = extract_patches(_x, patch_size)
-    grad = tf.gradients(_y, _x)[0]
+    grad = tape.gradient(_y, _x)
     # Divide by grad, to "average" together the overlapping patches
     # otherwise they would simply sum up
-    return tf.gradients(_y, _x, grad_ys=patches)[0] / grad
+    return tape.gradient(_y, _x, output_gradients=patches) / grad
